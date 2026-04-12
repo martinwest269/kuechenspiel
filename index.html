@@ -3,44 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fehlersuche - Ihre Küchenplanung</title>
+    <title>Fehlersuche Küche</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; text-align: center; color: #333; margin: 0; padding: 20px; background-color: #f9f9f9; }
-        h1 { color: #2c3e50; }
-        .wrapper { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-top: 20px; }
-        .image-box { position: relative; border: 3px solid #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; line-height: 0; }
-        img { max-width: 45vw; height: auto; display: block; }
+        body { font-family: sans-serif; text-align: center; background: #f0f0f0; padding: 20px; }
+        .wrapper { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .box { position: relative; border: 5px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.2); line-height: 0; }
+        img { max-width: 45vw; height: auto; display: block; background: #ccc; min-height: 200px; }
         #right-box { cursor: crosshair; }
-        .marker {
-            position: absolute;
-            border: 3px solid #27ae60;
-            background: rgba(39, 174, 96, 0.3);
-            border-radius: 50%;
-            width: 40px; height: 40px;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-        }
-        #message { display: none; margin: 30px auto; padding: 20px; max-width: 600px; background: #e8f5e9; border: 2px solid #27ae60; border-radius: 10px; }
-        .btn { background: #27ae60; color: white; padding: 15px 30px; border: none; border-radius: 5px; cursor: pointer; font-size: 18px; font-weight: bold; }
-        .btn:hover { background: #219150; }
+        .marker { position: absolute; border: 3px solid #27ae60; background: rgba(39,174,96,0.3); border-radius: 50%; width: 30px; height: 30px; transform: translate(-50%, -50%); pointer-events: none; }
+        #win { display: none; margin-top: 20px; padding: 20px; background: #dff0d8; border: 2px solid #3c763d; }
     </style>
 </head>
 <body>
 
-    <h1>Finden Sie die 5 Unterschiede!</h1>
-    <p>Markieren Sie die Fehler im <strong>rechten</strong> Bild, um Ihr Geschenk freizuschalten.</p>
+    <h1>Fehlersuche: Ihre Küchenplanung</h1>
+    <p>Finden Sie die 5 Unterschiede im rechten Bild!</p>
 
     <div class="wrapper">
-        <div class="image-box">
-            <img id="img-left" src="" alt="Original">
-        </div>
-        <div class="image-box" id="right-box" onclick="checkClick(event)">
-            <img id="img-right" src="" alt="Fehlerbild">
-        </div>
+        <div class="box"><img id="left" src="" alt="Links"></div>
+        <div class="box" id="right-box" onclick="check(event)"><img id="right" src="" alt="Rechts"></div>
     </div>
 
-    <div id="message">
-        <h2>🎉 Glückwunsch! Alle Fehler gefunden!</h2>
-        <p>Sie haben das Geschenk freigeschaltet: <strong id="gift-name"></strong></p>
-        <p>Klicken Sie unten auf den Button, um uns die Bestätigung zu senden. Wir überreichen Ihnen das Geschenk dann persönlich!</p>
-        <button class="btn" onclick="sendConfirmation()">Geschenk jetzt anfordern
+    <div id="win">
+        <h2>🎉 Gefunden!</h2>
+        <p>Ihr Geschenk: <strong id="gift"></strong></p>
+        <button onclick="send()" style="padding:10px 20px; cursor:pointer;">Bestätigung senden</button>
+    </div>
+
+    <script>
+        // Werte aus der URL lesen
+        const params = new URLSearchParams(window.location.search);
+        const kundenID = params.get('id') || 'hannes';
+        const geschenk = params.get('gift') || 'Überraschung';
+
+        document.getElementById('gift').innerText = geschenk;
+
+        // PFADE SETZEN - Wir nutzen jetzt die exakten Pfade, die bei dir funktionierten
+        const bildLinks = kundenID + "/test_links.jpg";
+        const bildRechts = kundenID + "/test_rechts.jpg";
+
+        console.log("Versuche zu laden:", bildLinks, bildRechts);
+
+        document.getElementById('left').src = bildLinks;
+        document.getElementById('right').src = bildRechts;
+
+        // Fehler-Positionen (Zonen)
+        let targets = [{x:25,y:25},{x:75,y:25},{x:50,y:50},{x:25,y:75},{x:75,y:75}];
+        let found = 0;
+
+        function check(e) {
+            const rect = document.getElementById('right').getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / rect.width) * 100;
+            const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+            targets.forEach(t => {
+                if(!t.ok && Math.abs(x - t.x) < 10 && Math.abs(y - t.y) < 10) {
+                    t.ok = true;
+                    found++;
+                    const m = document.createElement('div');
+                    m.className = 'marker';
+                    m.style.left = (e.clientX - rect.left) + 'px';
+                    m.style.top = (e.clientY - rect.top) + 'px';
+                    document.getElementById('right-box').appendChild(m);
+                }
+            });
+
+            if(found === 5) document.getElementById('win').style.display = 'block';
+        }
+
+        function send() {
+            window.location.href = "mailto:deine-email@beispiel.at?subject=Geloest&body=Ich habe gewonnen!";
+        }
+    </script>
+</body>
+</html>
