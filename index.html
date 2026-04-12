@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fehlersuche - Ihre Küchenplanung</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; color: #333; margin: 0; padding: 20px; }
+        .wrapper { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .image-box { position: relative; border: 2px solid #ddd; border-radius: 8px; overflow: hidden; line-height: 0; }
+        img { max-width: 45vw; height: auto; }
+        #right-box { cursor: cell; }
+        .marker {
+            position: absolute;
+            border: 3px solid #27ae60;
+            background: rgba(39, 174, 96, 0.2);
+            border-radius: 50%;
+            width: 40px; height: 40px;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+        #message { display: none; margin-top: 20px; padding: 20px; background: #e8f5e9; border-radius: 10px; }
+        .btn { background: #27ae60; color: white; padding: 12px 25px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+    </style>
+</head>
+<body>
+
+    <h1 id="headline">Hallo! Finden Sie die 5 Unterschiede?</h1>
+    <p>Markieren Sie die 5 Fehler im **rechten** Bild.</p>
+
+    <div class="wrapper">
+        <div class="image-box">
+            <img id="img-left" src="" alt="Original">
+        </div>
+        <div class="image-box" id="right-box" onclick="checkClick(event)">
+            <img id="img-right" src="" alt="Fehlerbild">
+        </div>
+    </div>
+
+    <div id="message">
+        <h2>🎉 Glückwunsch! Alle Fehler gefunden!</h2>
+        <p>Klicken Sie auf den Button, um uns die Bestätigung zu senden und Ihr Geschenk zu sichern.</p>
+        <button class="btn" onclick="sendConfirmation()">Geschenk jetzt anfordern</button>
+    </div>
+
+    <script>
+        // URL-Parameter auslesen (z.B. ?name=Maier&gift=Pfannen-Set)
+        const urlParams = new URLSearchParams(window.location.search);
+        const kundenID = urlParams.get('id') || 'standard';
+        const geschenk = urlParams.get('gift') || 'eine kleine Überraschung';
+
+        // Bilder automatisch setzen
+        document.getElementById('img-left').src = `kunden/${kundenID}_links.jpg`;
+        document.getElementById('img-right').src = `kunden/${kundenID}_rechts.jpg`;
+
+        // Die Fehler-Koordinaten (Hier müssen Sie für jeden Kunden kurz definieren, wo die Fehler sind)
+        // Einfachheitshalber nutzen wir hier 5 Standardzonen.
+        // Tipp: Wenn Sie die Fehler immer an ähnlichen Stellen einbauen, müssen Sie hier nie etwas ändern!
+        const targets = [
+            {x: 20, y: 30}, {x: 50, y: 15}, {x: 80, y: 40}, {x: 35, y: 70}, {x: 75, y: 85}
+        ];
+        
+        let found = 0;
+
+        function checkClick(event) {
+            const rect = document.getElementById('img-right').getBoundingClientRect();
+            const x = ((event.clientX - rect.left) / rect.width) * 100;
+            const y = ((event.clientY - rect.top) / rect.height) * 100;
+
+            targets.forEach((target) => {
+                if (!target.found && Math.abs(x - target.x) < 6 && Math.abs(y - target.y) < 6) {
+                    target.found = true;
+                    found++;
+                    createMarker(event.clientX - rect.left, event.clientY - rect.top);
+                }
+            });
+
+            if (found === 5) {
+                document.getElementById('message').style.display = 'block';
+                document.getElementById('message').scrollIntoView({behavior: "smooth"});
+            }
+        }
+
+        function createMarker(x, y) {
+            const marker = document.createElement('div');
+            marker.className = 'marker';
+            marker.style.left = x + 'px';
+            marker.style.top = y + 'px';
+            document.getElementById('right-box').appendChild(marker);
+        }
+
+        function sendConfirmation() {
+            const subject = `Gelöst: Fehlersuche von Kunde ${kundenID}`;
+            const body = `Hallo! Ich habe alle 5 Fehler in meiner Küchenplanung gefunden und möchte mein Geschenk (${geschenk}) einlösen.`;
+            window.location.href = `mailto:ihremail@kuechenstudio.at?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        }
+    </script>
+</body>
+</html>
