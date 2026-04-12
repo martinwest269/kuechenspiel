@@ -3,76 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fehlersuche Küche</title>
+    <title>Küchen-Gewinnspiel</title>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #f0f0f0; padding: 20px; }
-        .wrapper { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
-        .box { position: relative; border: 5px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.2); line-height: 0; }
-        img { max-width: 45vw; height: auto; display: block; background: #ccc; min-height: 200px; }
+        body { font-family: sans-serif; text-align: center; background: #f4f4f4; margin: 0; padding: 10px; }
+        .wrapper { display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        .box { position: relative; width: 95%; max-width: 600px; border: 4px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.2); line-height: 0; }
+        img { width: 100%; height: auto; display: block; }
         #right-box { cursor: crosshair; }
-        .marker { position: absolute; border: 3px solid #27ae60; background: rgba(39,174,96,0.3); border-radius: 50%; width: 30px; height: 30px; transform: translate(-50%, -50%); pointer-events: none; }
-        #win { display: none; margin-top: 20px; padding: 20px; background: #dff0d8; border: 2px solid #3c763d; }
+        .marker { position: absolute; border: 3px solid #27ae60; background: rgba(39,174,96,0.3); border-radius: 50%; width: 8%; height: 8%; min-width: 25px; min-height: 25px; transform: translate(-50%, -50%); pointer-events: none; }
+        #win { display: none; margin-top: 20px; padding: 20px; background: #dff0d8; border: 2px solid #3c763d; border-radius: 10px; }
+        .btn { background: #27ae60; color: white; padding: 15px 25px; border: none; border-radius: 5px; font-size: 18px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <h1>Fehlersuche: Ihre Küchenplanung</h1>
-    <p>Finden Sie die 5 Unterschiede im rechten Bild!</p>
+    <h2 id="title">Finden Sie die 5 Fehler!</h2>
+    <p id="instruction">Klicken Sie auf die Unterschiede im unteren Bild.</p>
 
     <div class="wrapper">
-        <div class="box"><img id="left" src="" alt="Links"></div>
-        <div class="box" id="right-box" onclick="check(event)"><img id="right" src="" alt="Rechts"></div>
+        <div class="box"><img id="left" src="" alt="Original"></div>
+        <div class="box" id="right-box" onclick="handleImageClick(event)"><img id="right" src="" alt="Fehlerbild"></div>
     </div>
 
     <div id="win">
-        <h2>🎉 Gefunden!</h2>
-        <p>Ihr Geschenk: <strong id="gift"></strong></p>
-        <button onclick="send()" style="padding:10px 20px; cursor:pointer;">Bestätigung senden</button>
+        <h2>🎉 Glückwunsch!</h2>
+        <p>Sie erhalten: <strong id="gift-display"></strong></p>
+        <button class="btn" onclick="sendMail()">Geschenk jetzt anfordern</button>
     </div>
 
     <script>
-        // Werte aus der URL lesen
         const params = new URLSearchParams(window.location.search);
-        const kundenID = params.get('id') || 'hannes';
-        const geschenk = params.get('gift') || 'Überraschung';
+        const kundenID = params.get('id') || 'test';
+        const geschenk = params.get('gift') || 'eine Überraschung';
+        
+        // Bilder laden
+        document.getElementById('left').src = kundenID + "/test_links.jpg";
+        document.getElementById('right').src = kundenID + "/test_rechts.jpg";
+        document.getElementById('gift-display').innerText = geschenk;
 
-        document.getElementById('gift').innerText = geschenk;
+        // Hier werden die Koordinaten gespeichert
+        // Damit du nicht programmieren musst, habe ich hier 5 Standard-Punkte gelassen.
+        // Du kannst diese Zahlen hier einmalig anpassen, wenn du deine Fehler immer an der gleichen Stelle einbaust.
+        let targets = [
+            {x: 20, y: 20}, {x: 80, y: 20}, {x: 50, y: 50}, {x: 20, y: 80}, {x: 80, y: 80}
+        ];
+        
+        let foundCount = 0;
 
-        // PFADE SETZEN - Wir nutzen jetzt die exakten Pfade, die bei dir funktionierten
-        const bildLinks = kundenID + "/test_links.jpg";
-        const bildRechts = kundenID + "/test_rechts.jpg";
-
-        console.log("Versuche zu laden:", bildLinks, bildRechts);
-
-        document.getElementById('left').src = bildLinks;
-        document.getElementById('right').src = bildRechts;
-
-        // Fehler-Positionen (Zonen)
-        let targets = [{x:25,y:25},{x:75,y:25},{x:50,y:50},{x:25,y:75},{x:75,y:75}];
-        let found = 0;
-
-        function check(e) {
+        function handleImageClick(e) {
             const rect = document.getElementById('right').getBoundingClientRect();
+            // Berechnung in Prozent (wichtig für Smartphones!)
             const x = ((e.clientX - rect.left) / rect.width) * 100;
             const y = ((e.clientY - rect.top) / rect.height) * 100;
 
+            // Log für dich im Hintergrund (Konsole), um die Werte zu sehen
+            console.log("Klick bei: x=" + x.toFixed(2) + "%, y=" + y.toFixed(2) + "%");
+
             targets.forEach(t => {
-                if(!t.ok && Math.abs(x - t.x) < 10 && Math.abs(y - t.y) < 10) {
-                    t.ok = true;
-                    found++;
-                    const m = document.createElement('div');
-                    m.className = 'marker';
-                    m.style.left = (e.clientX - rect.left) + 'px';
-                    m.style.top = (e.clientY - rect.top) + 'px';
-                    document.getElementById('right-box').appendChild(m);
+                if(!t.found && Math.abs(x - t.x) < 7 && Math.abs(y - t.y) < 7) {
+                    t.found = true;
+                    foundCount++;
+                    drawMarker(e.clientX - rect.left, e.clientY - rect.top);
                 }
             });
 
-            if(found === 5) document.getElementById('win').style.display = 'block';
+            if(foundCount === 5) {
+                document.getElementById('win').style.display = 'block';
+                document.getElementById('win').scrollIntoView({behavior: 'smooth'});
+            }
         }
 
-        function send() {
-            window.location.href = "mailto:westreicher28@beispiel.at?subject=Geloest&body=Ich habe gewonnen!";
+        function drawMarker(x, y) {
+            const m = document.createElement('div');
+            m.className = 'marker';
+            m.style.left = x + 'px';
+            m.style.top = y + 'px';
+            document.getElementById('right-box').appendChild(m);
+        }
+
+        function sendMail() {
+            const mailTo = "deine-email@beispiel.at"; // DEINE ADRESSE HIER
+            const subject = "Küchen-Gewinnspiel gelöst: " + kundenID;
+            const body = "Ich habe alle 5 Fehler gefunden und freue mich auf mein Geschenk: " + geschenk;
+            window.location.href = "mailto:" + mailTo + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
         }
     </script>
 </body>
