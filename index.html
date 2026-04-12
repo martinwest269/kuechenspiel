@@ -8,17 +8,18 @@
         body { font-family: sans-serif; text-align: center; background: #f4f4f4; margin: 0; padding: 10px; }
         .wrapper { display: flex; flex-direction: column; align-items: center; gap: 15px; }
         .box { position: relative; width: 95%; max-width: 600px; border: 4px solid white; box-shadow: 0 5px 15px rgba(0,0,0,0.2); line-height: 0; }
-        img { width: 100%; height: auto; display: block; }
+        img { width: 100%; height: auto; display: block; background: #ddd; min-height: 150px; }
         #right-box { cursor: crosshair; }
-        .marker { position: absolute; border: 3px solid #27ae60; background: rgba(39,174,96,0.3); border-radius: 50%; width: 8%; height: 8%; min-width: 25px; min-height: 25px; transform: translate(-50%, -50%); pointer-events: none; }
-        #win { display: none; margin-top: 20px; padding: 20px; background: #dff0d8; border: 2px solid #3c763d; border-radius: 10px; }
-        .btn { background: #27ae60; color: white; padding: 15px 25px; border: none; border-radius: 5px; font-size: 18px; font-weight: bold; cursor: pointer; }
+        .marker { position: absolute; border: 3px solid #27ae60; background: rgba(39,174,96,0.3); border-radius: 50%; width: 10%; height: 10%; min-width: 30px; min-height: 30px; transform: translate(-50%, -50%); pointer-events: none; }
+        #win { display: none; margin: 20px auto; padding: 20px; max-width: 500px; background: #dff0d8; border: 2px solid #3c763d; border-radius: 10px; }
+        .btn { background: #27ae60; color: white; padding: 15px 25px; border: none; border-radius: 5px; font-size: 18px; font-weight: bold; cursor: pointer; width: 100%; }
+        #admin-info { background: #eee; padding: 10px; margin-top: 50px; font-size: 12px; color: #666; border-top: 1px dashed #ccc; }
     </style>
 </head>
 <body>
 
-    <h2 id="title">Finden Sie die 5 Fehler!</h2>
-    <p id="instruction">Klicken Sie auf die Unterschiede im unteren Bild.</p>
+    <h2>Finden Sie die 5 Unterschiede!</h2>
+    <p>Klicken Sie auf die Fehler im <strong>unteren</strong> Bild.</p>
 
     <div class="wrapper">
         <div class="box"><img id="left" src="" alt="Original"></div>
@@ -27,8 +28,13 @@
 
     <div id="win">
         <h2>🎉 Glückwunsch!</h2>
-        <p>Sie erhalten: <strong id="gift-display"></strong></p>
+        <p>Sie haben das Geschenk freigeschaltet: <strong id="gift-display"></strong></p>
         <button class="btn" onclick="sendMail()">Geschenk jetzt anfordern</button>
+    </div>
+
+    <div id="admin-info">
+        <strong>Admin-Hilfe:</strong> Klicke auf das untere Bild, um Koordinaten für den Link zu erhalten:<br>
+        <span id="coords-output">Noch kein Klick...</span>
     </div>
 
     <script>
@@ -41,29 +47,31 @@
         document.getElementById('right').src = kundenID + "/test_rechts.jpg";
         document.getElementById('gift-display').innerText = geschenk;
 
-        // Hier werden die Koordinaten gespeichert
-        // Damit du nicht programmieren musst, habe ich hier 5 Standard-Punkte gelassen.
-        // Du kannst diese Zahlen hier einmalig anpassen, wenn du deine Fehler immer an der gleichen Stelle einbaust.
-        let targets = [
-            {x=46.42%, y=7.54%}, {x=62.92%, y=35.89%}, {x=65.08%, y=67.36%}, {x=50.58%, y=85.74%}, {x=89.25%, y=90.41%}
-        ];
+        // Fehler aus der URL laden (x1, y1 bis x5, y5)
+        let targets = [];
+        for(let i=1; i<=5; i++) {
+            targets.push({
+                x: parseFloat(params.get('x'+i)) || 0,
+                y: parseFloat(params.get('y'+i)) || 0,
+                found: false
+            });
+        }
         
         let foundCount = 0;
 
         function handleImageClick(e) {
             const rect = document.getElementById('right').getBoundingClientRect();
-            // Berechnung in Prozent (wichtig für Smartphones!)
             const x = ((e.clientX - rect.left) / rect.width) * 100;
             const y = ((e.clientY - rect.top) / rect.height) * 100;
 
-            // Log für dich im Hintergrund (Konsole), um die Werte zu sehen
-            console.log("Klick bei: x=" + x.toFixed(2) + "%, y=" + y.toFixed(2) + "%");
+            // Admin-Ausgabe (Hilft dir beim Link erstellen)
+            document.getElementById('coords-output').innerText = `&x${foundCount+1}=${x.toFixed(1)}&y${foundCount+1}=${y.toFixed(1)}`;
 
             targets.forEach(t => {
-                if(!t.found && Math.abs(x - t.x) < 7 && Math.abs(y - t.y) < 7) {
+                if(t.x !== 0 && !t.found && Math.abs(x - t.x) < 7 && Math.abs(y - t.y) < 7) {
                     t.found = true;
                     foundCount++;
-                    drawMarker(e.clientX - rect.left, e.clientY - rect.top);
+                    drawMarker(e.clientX - rect.left, event.clientY - rect.top);
                 }
             });
 
